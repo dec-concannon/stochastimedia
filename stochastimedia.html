@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stochastimedia</title>
+    <style>
+        :root {
+            --background-color: #000000;
+            --text-color: #E0D8C0;
+            --message-color: #A0A0A0;
+            --item-background: #333;
+            --menu-background: #323232;
+            --menu-border: #E0D8C0;
+            --input-background: #444; 
+            --input-border: #666;
+        }
+
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            box-sizing: border-box;
+            overflow-y: scroll;
+        }
+
+        #imageContainer {
+            display: block;
+            width: 100%;
+            max-width: 100vw;
+            padding: 5px;
+            box-sizing: border-box;
+       }
+
+        .image-row {
+            display: flex;
+        }
+
+        .image-item-justified {
+            overflow: hidden;
+            background-color: var(--item-background);
+        }
+
+        .image-item-justified a {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .image-item-justified img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        #message {
+            margin: 20px auto;
+            color: var(--message-color);
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        #settingsMenu {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: var(--menu-background);
+            color: var(--text-color);
+            padding: 0px;
+            z-index: 1000;
+            font-size: 0.8em;
+            max-width: 90%;
+        }
+
+        #settingsWrapper {
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: flex-start;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        #settingsToggle {
+            background: none;
+            border: 1px solid var(--menu-border);
+            color: var(--text-color);
+			padding-bottom: 3px;
+			padding-top: 3px;
+			padding-right: 7px;
+			padding-left: 7px;
+            cursor: pointer;
+            display: block;
+            width: auto;
+            text-align: center;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+         #settingsToggle:hover {
+             background-color: rgba(255,255,255,0.1);
+         }
+
+        #settingsContent {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            gap: 15px;
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-width: 0; /* Allows shrinking */
+        }
+
+        #settingsContent.visible {
+             display: flex;
+             padding: 10px;
+             min-width: 280px;
+             border-left: 1px solid var(--item-background);
+        }
+
+        #settingsContent label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        #settingsContent input[type="range"],
+        #settingsContent input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            background-color: var(--input-background);
+            color: var(--text-color);
+            border: 1px solid var(--input-border);
+            padding: 5px;
+            border-radius: 3px;
+        }
+        #settingsContent input[type="range"] {
+            cursor: grab;
+            padding: 0;
+        }
+         #settingsContent input[type="range"]:active {
+             cursor: grabbing;
+         }
+
+         #imageSizeValue {
+             display: inline-flex;
+             margin-left: 5px;
+			 margin-right: 5px;
+			 margin-top: 3px;
+             min-width: 40px;
+             text-align: right;
+         }
+
+         .slider-control {
+             display: inline-flex;
+             align-items: center;
+             width: 100%;
+         }
+
+         .slider-control label {
+             flex-shrink: 0;
+             margin-right: 10px;
+             margin-bottom: 0;
+			 margin-top: 7px;
+             font-weight: normal;
+         }
+
+         .slider-control input[type="range"] {
+             flex-grow: 1;
+             margin-right: 10px;
+             width: auto;
+         }
+
+         .settings-group {
+            border-top: 1px solid var(--item-background);
+            padding-top: 15px;
+         }
+         .settings-group:first-child {
+             border-top: none;
+             padding-top: 0;
+         }
+         .settings-group h4 {
+             margin-top: 0;
+             margin-bottom: 10px;
+             color: var(--text-color);
+         }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            font-weight: normal;
+        }
+        .input-group small {
+            display: block;
+            font-size: 0.85em;
+            color: var(--message-color);
+            margin-top: 3px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="imageContainer">
+    </div>
+
+    <p id="message">Loading images...</p>
+
+    <div id="settingsMenu">
+        <div id="settingsWrapper">
+             <div id="settingsContent">
+                 <div class="settings-group">
+                     <h4>Display Settings</h4>
+                     <div class="slider-control">
+                         <label for="imageSizeSlider">Target Row Height: </label>
+                         <input type="range" id="imageSizeSlider" min="100" max="400" value="200" step="10">
+                         <span id="imageSizeValue">200px</span>
+                     </div>
+                 </div>
+
+                 <div class="settings-group">
+                    <h4>API User-Agent</h4>
+                    <small style="margin-bottom:10px; display:block;">Helps Wikimedia identify your script. Please be accurate.</small>
+                    <div class="input-group">
+                        <label for="projectNameInput">Project Name:</label>
+                        <input type="text" id="projectNameInput">
+                    </div>
+                    <div class="input-group">
+                        <label for="contactInfoInput">Contact Info (Email or Project URL):</label>
+                        <input type="text" id="contactInfoInput" placeholder="e.g., user@example.com or https://myproject.org">
+                    </div>
+                 </div>
+             </div>
+             <button id="settingsToggle">⛭<br></button>
+        </div>
+    </div>
+
+
+    <script>
+        const baseApiUrl = 'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&format=json&origin=*';
+        const messageElement = document.getElementById('message');
+        const imageContainer = document.getElementById('imageContainer');
+
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsContent = document.getElementById('settingsContent');
+        const imageSizeSlider = document.getElementById('imageSizeSlider');
+        const imageSizeValueSpan = document.getElementById('imageSizeValue');
+
+        const projectNameInput = document.getElementById('projectNameInput');
+        const contactInfoInput = document.getElementById('contactInfoInput');
+
+        let isLoadingImages = false;
+        const initialLoadLimit = 30;
+        const subsequentLoadLimit = 20;
+        const scrollThreshold = 500;
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.tif', '.tiff', '.bmp', '.gif', '.svg'];
+
+        let allLoadedImagesData = [];
+        let processedImageIndex = 0;
+        const GAP_SIZE = 5;
+
+        let onNextRenderComplete = null;
+        let isRenderScheduled = false;
+        let isFullLayoutUpdateInProgress = false;
+        let debouncedCheckScrollTimer = null;
+
+        function loadUserAgentSettings() {
+            projectNameInput.value = localStorage.getItem('userAgentProjectName') || 'stochastimedia';
+            contactInfoInput.value = localStorage.getItem('userAgentContactInfo') || '';
+        }
+
+        function saveUserAgentSettings() {
+            const projectName = projectNameInput.value.trim();
+            const contactInfo = contactInfoInput.value.trim();
+
+            if (projectName) {
+                localStorage.setItem('userAgentProjectName', projectName);
+            } else {
+                projectNameInput.value = 'stochastimedia'; // Reset to default if cleared
+                localStorage.setItem('userAgentProjectName', 'stochastimedia');
+            }
+            localStorage.setItem('userAgentContactInfo', contactInfo);
+        }
+
+        function getUserAgentString() {
+            const projectName = localStorage.getItem('userAgentProjectName') || 'stochastimedia';
+            const contactInfo = localStorage.getItem('userAgentContactInfo') || '';
+            const version = '1.0';
+
+            let userAgent = `${projectName}/${version}`;
+            if (contactInfo) {
+                userAgent += ` (${contactInfo})`;
+            }
+            return userAgent;
+        }
+
+        projectNameInput.addEventListener('input', saveUserAgentSettings);
+        contactInfoInput.addEventListener('input', saveUserAgentSettings);
+
+
+        function isAllowedImageFile(canonicalUrl) {
+            if (!canonicalUrl) return false;
+            const lowerUrl = canonicalUrl.toLowerCase();
+            return allowedExtensions.some(ext => lowerUrl.endsWith(ext));
+        }
+
+        async function fetchAndAppendImages(limit) {
+            if (isLoadingImages) {
+                return;
+            }
+            isLoadingImages = true;
+            messageElement.textContent = allLoadedImagesData.length === 0 ? 'Loading initial images...' : 'Loading more images...';
+            messageElement.style.display = 'block';
+
+            const currentPreferredHeight = parseInt(imageSizeSlider.value, 10);
+            const requestedThumbWidth = Math.round(currentPreferredHeight * 1.5);
+            const apiUrl = `${baseApiUrl}&grnlimit=${limit}&prop=imageinfo&iiprop=url|thumburl|thumbwidth|thumbheight&iiurlwidth=${requestedThumbWidth}`;
+            const dynamicUserAgent = getUserAgentString();
+
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'User-Agent': dynamicUserAgent
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                const pages = data.query?.pages;
+                const pageIds = pages ? Object.keys(pages) : [];
+                let newImagesInBatchCount = 0;
+
+                if (pageIds.length > 0) {
+                    pageIds.forEach((pageId) => {
+                        const pageData = pages[pageId];
+                        const imageInfo = pageData?.imageinfo?.[0];
+
+                        if (imageInfo?.url && isAllowedImageFile(imageInfo.url) && imageInfo.thumburl && imageInfo.thumbwidth && imageInfo.thumbheight) {
+                            allLoadedImagesData.push({
+                                thumbUrl: imageInfo.thumburl,
+                                thumbWidth: imageInfo.thumbwidth,
+                                thumbHeight: imageInfo.thumbheight,
+                                fullUrl: imageInfo.url,
+                                title: pageData.title,
+                                pageId: pageId
+                            });
+                            newImagesInBatchCount++;
+                        }
+                    });
+
+                    if (newImagesInBatchCount > 0 || (allLoadedImagesData.length > 0 && imageContainer.children.length === 0) ) {
+                        requestRenderCycle();
+                        messageElement.style.display = 'none';
+                    } else if (allLoadedImagesData.length === 0 && imageContainer.children.length === 0) {
+                        messageElement.textContent = 'Fetched files, but could not find any images matching criteria.';
+                    } else {
+                         messageElement.style.display = 'none';
+                    }
+                } else {
+                    if (allLoadedImagesData.length === 0) {
+                        messageElement.textContent = 'Could not load any images.';
+                    } else {
+                        messageElement.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching images:', error);
+                messageElement.textContent = 'Error loading images.';
+            } finally {
+                isLoadingImages = false;
+                setTimeout(() => checkScroll("fetchComplete"), 500);
+            }
+        }
+
+        function createImageDomElement(imgData, width, height) {
+            const imageItemDiv = document.createElement('div');
+            imageItemDiv.classList.add('image-item-justified');
+            imageItemDiv.style.width = `${Math.round(width)}px`;
+            imageItemDiv.style.height = `${Math.round(height)}px`;
+            const imageLink = document.createElement('a');
+            imageLink.href = imgData.fullUrl;
+            imageLink.target = '_blank';
+            const imgElement = document.createElement('img');
+            imgElement.src = imgData.thumbUrl;
+            imgElement.alt = imgData.title ? `Image: ${imgData.title.replace('File:', '')}` : 'Random image';
+            imgElement.loading = 'lazy';
+            imgElement.addEventListener('error', () => {
+                const indexToRemove = allLoadedImagesData.findIndex(d => d.pageId === imgData.pageId);
+                if (indexToRemove > -1) {
+                    allLoadedImagesData.splice(indexToRemove, 1);
+                    if (!isFullLayoutUpdateInProgress) handleLayoutChange("imageError");
+                } else if (imageItemDiv.parentNode) {
+                    imageItemDiv.parentNode.removeChild(imageItemDiv);
+                }
+            });
+            imageLink.appendChild(imgElement);
+            imageItemDiv.appendChild(imageLink);
+            return imageItemDiv;
+        }
+
+        function requestRenderCycle() {
+            if (isRenderScheduled) return;
+            isRenderScheduled = true;
+            requestAnimationFrame(() => {
+                isRenderScheduled = false;
+                const currentContainerWidth = imageContainer.clientWidth;
+                if (currentContainerWidth <= 0) {
+                    if (typeof onNextRenderComplete === 'function') {
+                        onNextRenderComplete();
+                        onNextRenderComplete = null;
+                    }
+                    return;
+                }
+                renderJustifiedLayout(currentContainerWidth);
+                if (typeof onNextRenderComplete === 'function') onNextRenderComplete();
+                if (!isFullLayoutUpdateInProgress) setTimeout(() => checkScroll("renderComplete"), 150);
+            });
+        }
+
+        function renderJustifiedLayout(containerWidth) {
+            const currentPreferredHeight = parseInt(imageSizeSlider.value, 10);
+            let startIndexForLayout = processedImageIndex;
+            if (imageContainer.children.length > 0) {
+                const lastRowDiv = imageContainer.lastElementChild;
+                if (lastRowDiv && lastRowDiv.classList.contains('image-row') && lastRowDiv.classList.contains('last-row')) {
+                    const numImagesInLastRow = lastRowDiv.children.length;
+                    if (numImagesInLastRow > 0) {
+                        imageContainer.removeChild(lastRowDiv);
+                        startIndexForLayout = Math.max(0, processedImageIndex - numImagesInLastRow);
+                    }
+                }
+            }
+            startIndexForLayout = Math.min(Math.max(0, startIndexForLayout), allLoadedImagesData.length);
+            processedImageIndex = startIndexForLayout;
+            let currentRowItems = [];
+            let currentRowSummedAspectRatios = 0;
+            for (let i = startIndexForLayout; i < allLoadedImagesData.length; i++) {
+                const imgData = allLoadedImagesData[i];
+                if (!imgData.thumbWidth || !imgData.thumbHeight || imgData.thumbHeight <= 0) {
+                    processedImageIndex = i + 1;
+                    continue;
+                }
+                const aspectRatio = imgData.thumbWidth / imgData.thumbHeight;
+                currentRowItems.push(imgData);
+                currentRowSummedAspectRatios += aspectRatio;
+                const currentTheoreticalWidth = (currentRowSummedAspectRatios * currentPreferredHeight) + (Math.max(0, currentRowItems.length - 1) * GAP_SIZE);
+                const isLastImageInLoop = (i === allLoadedImagesData.length - 1);
+                if (currentTheoreticalWidth >= containerWidth || isLastImageInLoop) {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.classList.add('image-row');
+                    rowDiv.style.marginBottom = `${GAP_SIZE}px`;
+                    let rowHeight;
+                    const treatAsIncompleteRow = isLastImageInLoop && currentTheoreticalWidth < containerWidth && currentRowItems.length > 0;
+                    if (treatAsIncompleteRow) {
+                        rowHeight = currentPreferredHeight;
+                        rowDiv.classList.add('last-row');
+                    } else {
+                        let numGapsInRow = Math.max(0, currentRowItems.length - 1);
+                        rowHeight = currentRowSummedAspectRatios <= 0 ? currentPreferredHeight : (containerWidth - (numGapsInRow * GAP_SIZE)) / currentRowSummedAspectRatios;
+                        if(currentRowSummedAspectRatios <= 0) rowDiv.classList.add('last-row');
+                        rowHeight = Math.max(currentPreferredHeight * 0.6, Math.min(rowHeight, currentPreferredHeight * 1.6));
+                    }
+                    if (rowHeight <= 0) {
+                        processedImageIndex = i + 1;
+                        currentRowItems = [];
+                        currentRowSummedAspectRatios = 0;
+                        continue;
+                    }
+                    currentRowItems.forEach((itemData, index) => {
+                        const itemAspectRatio = itemData.thumbWidth / itemData.thumbHeight;
+                        const itemWidth = itemAspectRatio * rowHeight;
+                        if (itemWidth > 0 && rowHeight > 0) {
+                            const imageElement = createImageDomElement(itemData, itemWidth, rowHeight);
+                            if (index < currentRowItems.length - 1) imageElement.style.marginRight = `${GAP_SIZE}px`;
+                            rowDiv.appendChild(imageElement);
+                        }
+                    });
+                    if (rowDiv.children.length > 0) imageContainer.appendChild(rowDiv);
+                    currentRowItems = [];
+                    currentRowSummedAspectRatios = 0;
+                }
+                processedImageIndex = i + 1;
+            }
+        }
+
+        function handleLayoutChange(caller) {
+            if (isFullLayoutUpdateInProgress && onNextRenderComplete) return;
+            isFullLayoutUpdateInProgress = true;
+            const currentScrollY = window.scrollY;
+            imageContainer.innerHTML = '';
+            processedImageIndex = 0;
+            onNextRenderComplete = () => {
+                window.scrollTo(0, currentScrollY);
+                const scrollYAfterRestore = window.scrollY;
+                onNextRenderComplete = null; // Clear first
+                if (Math.abs(scrollYAfterRestore - currentScrollY) > 50 && currentScrollY > 10) {
+                    setTimeout(() => {
+                        window.scrollTo(0, currentScrollY);
+                        isFullLayoutUpdateInProgress = false;
+                        setTimeout(() => checkScroll("layoutChangeRetryScroll"), 100);
+                    }, 50);
+                } else {
+                   isFullLayoutUpdateInProgress = false;
+                   setTimeout(() => checkScroll("layoutChangeImmediateScroll"), 100);
+                }
+            };
+            requestRenderCycle();
+        }
+
+        settingsToggle.addEventListener('click', () => {
+            settingsContent.classList.toggle('visible');
+        });
+
+        imageSizeSlider.addEventListener('input', (event) => {
+            imageSizeValueSpan.textContent = event.target.value + 'px';
+            handleLayoutChange("sliderInput");
+        });
+
+        imageSizeValueSpan.textContent = imageSizeSlider.value + 'px';
+
+        function checkScroll(caller) {
+            if (isLoadingImages || isFullLayoutUpdateInProgress) return;
+            const scrolledHeight = window.scrollY || document.documentElement.scrollTop;
+            const documentHeight = document.documentElement.scrollHeight;
+            const viewportHeight = document.documentElement.clientHeight;
+            if (scrolledHeight + viewportHeight >= documentHeight - scrollThreshold) {
+                fetchAndAppendImages(subsequentLoadLimit);
+            }
+        }
+
+        function debouncedScrollHandler() {
+            clearTimeout(debouncedCheckScrollTimer);
+            debouncedCheckScrollTimer = setTimeout(() => checkScroll("scrollEventDebounced"), 150);
+        }
+
+        window.addEventListener('scroll', debouncedScrollHandler);
+        window.addEventListener('resize', () => handleLayoutChange("windowResize"));
+
+        loadUserAgentSettings();
+        fetchAndAppendImages(initialLoadLimit);
+        setTimeout(() => checkScroll("initialLoad"), 1000);
+    </script>
+
+</body>
+</html>
